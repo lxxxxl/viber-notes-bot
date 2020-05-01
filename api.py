@@ -5,13 +5,19 @@ import json
 import logging
 import threading
 import os
+import urllib.request
+from urllib.parse import urlparse
 from flask import Flask, request, Response
 from waitress import serve
 
 from viberbot import Api
 from viberbot.api.bot_configuration import BotConfiguration
 from viberbot.api.viber_requests import ViberMessageRequest
-from viberbot.api.messages import TextMessage
+from viberbot.api.messages import (
+	TextMessage,
+	PictureMessage,
+	VideoMessage,
+	FileMessage)
 
 from YadiskWrapper import YadiskWrapper
 
@@ -80,32 +86,56 @@ class ViberFlaskWrapper(object):
 			return Response(status=200)
 
 
-		if not isinstance(viber_request.message, TextMessage):
-			message = TextMessage(text="Not supported yet")
+		# Process Text message
+		if isinstance(viber_request.message, TextMessage):
+			
+			request_text = viber_request.message.text
+			response_text = 'Saving...'
+			message = TextMessage(text=response_text)
 			self.viber.send_messages(viber_request.sender.id, [
 				message
 			])
-			return Response(status=200)
+			# Create saving thread
+			save_thread = threading.Thread(
+				target=self.thread_save_to_disk, 
+				args=(
+					viber_request.sender.id,
+					request_text,
+					None))
+			save_thread.start()
 
 
-		request_text = viber_request.message.text
-		response_text = 'Saving...'
-		message = TextMessage(text=response_text)
-		self.viber.send_messages(viber_request.sender.id, [
-			message
-		])
+		# Process Picture, Video and File messages
+		elif isinstance(viber_request.message, PictureMessage)	\
+		 or isinstance(viber_request.message, VideoMessage)		\
+		 or isinstance(viber_request.message, FileMessage):
+			url = viber_request.message.media	# URL of sent file
 
-		save_thread = threading.Thread(
-			target=self.thread_save_to_disk, 
-			args=(
-				viber_request.sender.id,
-				request_text,
-				None))
-		save_thread.start()
+			response_text = 'Saving...'
+			message = TextMessage(text=response_text)
+			self.viber.send_messages(viber_request.sender.id, [
+				message
+			])
+			# Create saving thread
+			save_thread = threading.Thread(
+				target=self.thread_save_to_disk, 
+				args=(
+					viber_request.sender.id,
+					None,
+					url))
+			save_thread.start()
+
+		# Process other messages
+		else:
+			response_text = 'Not supported yet'
+			message = TextMessage(text=response_text)
+			self.viber.send_messages(viber_request.sender.id, [
+				message
+			])
 
 		return Response(status=200)
 
-	def thread_save_to_disk(self, user_id, note, file):
+	def thread_save_to_disk(self, user_id, note, file_url):
 		"""Saves data to Yandex Disk and sends report to user_id"""
 		response_text = 'Saved'
 		# if text note provided
@@ -113,8 +143,20 @@ class ViberFlaskWrapper(object):
 			if not self.disk.save_note(note):
 				response_text = 'Cannot save note.'
 		# if file provided
-		if file:
-			pass
+		if file_url:
+			# extract filename from URL
+			url_parsed = urlparse(file_url)
+			filename = os.path.basename(url_parsed.path)
+			dest_filename = '/tmp/' + filename
+			# download file to temp directory
+			with urllib.request.urlopen(file_url) as response, open(dest_filename, 'wb') as out_file:
+				data = response.read()
+				out_file.write(data)
+			# upload file to Disk
+			if not self.disk.save_file(dest_filename):
+				response_text = 'Cannot save file.'
+			# remove temp file 
+			os.unlink(dest_filename)
 
 		message = TextMessage(text=response_text)
 		self.viber.send_messages(user_id, [

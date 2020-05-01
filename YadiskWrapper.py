@@ -71,21 +71,45 @@ class YadiskWrapper():
         if os.path.isfile(temp_filename):
             try:
                 self.disk.upload(temp_filename, notes_filename, overwrite=True)
+                # remove temp file
+                os.unlink(temp_filename)
                 return True
             except:
                 return False
             
         return False
         
+    def save_file(self, filename):
+        """Save file to remote
 
+        File will be saved to file /WORKDIR/YYYMMDD/
+        Returns operation status"""
 
+        # create subdirectory in remote working dir
+        dest_subdir = '{}/{}'.format(
+            self.working_dir,
+            datetime.now().strftime("%Y%m%d"),
+        )
+        try:
+             self.disk.mkdir(dest_subdir)
+        except yadisk.exceptions.PathExistsError:
+             pass
+        except:
+            return False
 
+        dest_filename = '{}/{}'.format(
+            dest_subdir,
+            os.path.basename(filename)
+        )
 
-
-    
-
-    
-
-
-
-
+        
+        # upload file
+        print(filename)
+        if os.path.isfile(filename):
+            try:
+                self.disk.upload(filename, dest_filename, overwrite=True)
+                return True
+            except:
+                return False
+            
+        return False
