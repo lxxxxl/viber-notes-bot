@@ -26,7 +26,7 @@ class ViberFlaskWrapper(object):
 
 	def __init__(self,name):
 		self.app = Flask(name)
-		self.app.add_url_rule('/message', view_func=self.message, methods=['POST',])
+		self.app.add_url_rule('/message', view_func=self.message, methods=['POST'])
 
 		bot_configuration = BotConfiguration(
 			name=os.environ['VIBERBOT_NAME'],
@@ -35,8 +35,6 @@ class ViberFlaskWrapper(object):
 		)
 
 		self.viber = Api(bot_configuration)
-
-		self.viber.set_webhook(os.environ['VIBERBOT_WEBHOOK'])
 		
 	def run(self):
 		self.app.run()
@@ -72,6 +70,4 @@ app = ViberFlaskWrapper(__name__)
 flask_app = app.flask_app()
 
 if __name__ == "__main__":
-	serve(flask_app, host="0.0.0.0", port=443)
-
-
+	serve(flask_app, host="0.0.0.0", port=8080)
