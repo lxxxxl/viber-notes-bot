@@ -170,6 +170,5 @@ class ViberFlaskWrapper(Flask):
 		return
 
 
-
-logging.basicConfig(level=logging.INFO)
 app = ViberFlaskWrapper(__name__)
+logging.basicConfig(level=logging.INFO)

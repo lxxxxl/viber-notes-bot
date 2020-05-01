@@ -1,8 +1,8 @@
-FROM python:2.7.14-alpine
+FROM python:3.7.7-alpine
 
 WORKDIR /app
 COPY . /app
 
 EXPOSE 5000
 
-CMD python ./api.py
+CMD FLASK_APP=api.py flask run --host="::"
