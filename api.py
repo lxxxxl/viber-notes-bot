@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 
 import json
 import logging
+import threading
 import os
 from flask import Flask, request, Response
 from waitress import serve
@@ -86,17 +87,41 @@ class ViberFlaskWrapper(object):
 			])
 			return Response(status=200)
 
-		request_text = viber_request.message.text
-		response_text = 'Saved.'
-		if not self.disk.save_note(request_text):
-			response_text = 'Not saved.'
 
+		request_text = viber_request.message.text
+		response_text = 'Saving...'
 		message = TextMessage(text=response_text)
 		self.viber.send_messages(viber_request.sender.id, [
 			message
 		])
 
+		save_thread = threading.Thread(
+			target=self.thread_save_to_disk, 
+			args=(
+				viber_request.sender.id,
+				request_text,
+				None))
+		save_thread.start()
+
 		return Response(status=200)
+
+	def thread_save_to_disk(self, user_id, note, file):
+		"""Saves data to Yandex Disk and sends report to user_id"""
+		response_text = 'Saved'
+		# if text note provided
+		if note:
+			if not self.disk.save_note(note):
+				response_text = 'Cannot save note.'
+		# if file provided
+		if file:
+			pass
+
+		message = TextMessage(text=response_text)
+		self.viber.send_messages(user_id, [
+			message
+		])
+		return
+
 
 
 logging.basicConfig(level=logging.DEBUG)
