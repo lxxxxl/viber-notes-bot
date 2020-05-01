@@ -17,7 +17,8 @@ from viberbot.api.messages import (
 	TextMessage,
 	PictureMessage,
 	VideoMessage,
-	FileMessage)
+	FileMessage,
+	LocationMessage)
 
 from YadiskWrapper import YadiskWrapper
 
@@ -88,7 +89,6 @@ class ViberFlaskWrapper(object):
 
 		# Process Text message
 		if isinstance(viber_request.message, TextMessage):
-			
 			request_text = viber_request.message.text
 			response_text = 'Saving...'
 			message = TextMessage(text=response_text)
@@ -110,7 +110,6 @@ class ViberFlaskWrapper(object):
 		 or isinstance(viber_request.message, VideoMessage)		\
 		 or isinstance(viber_request.message, FileMessage):
 			url = viber_request.message.media	# URL of sent file
-
 			response_text = 'Saving...'
 			message = TextMessage(text=response_text)
 			self.viber.send_messages(viber_request.sender.id, [
@@ -123,6 +122,24 @@ class ViberFlaskWrapper(object):
 					viber_request.sender.id,
 					None,
 					url))
+			save_thread.start()
+
+
+		# Process Location message
+		elif isinstance(viber_request.message, LocationMessage):
+			request_text = str(viber_request.message.location)
+			response_text = 'Saving...'
+			message = TextMessage(text=response_text)
+			self.viber.send_messages(viber_request.sender.id, [
+				message
+			])
+			# Create saving thread
+			save_thread = threading.Thread(
+				target=self.thread_save_to_disk, 
+				args=(
+					viber_request.sender.id,
+					request_text,
+					None))
 			save_thread.start()
 
 		# Process other messages
