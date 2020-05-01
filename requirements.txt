@@ -1,4 +1,3 @@
 flask
-waitress
 viberbot==1.0.11
 yadisk

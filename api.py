@@ -8,7 +8,6 @@ import os
 import urllib.request
 from urllib.parse import urlparse
 from flask import Flask, request, Response
-from waitress import serve
 
 from viberbot import Api
 from viberbot.api.bot_configuration import BotConfiguration
@@ -23,10 +22,7 @@ from viberbot.api.messages import (
 from YadiskWrapper import YadiskWrapper
 
 
-class ViberFlaskWrapper(object):
-	
-	# Main Flask object
-	app = None
+class ViberFlaskWrapper(Flask):
 	
 	# Stores session states
 	sessionStorage = {}
@@ -41,9 +37,9 @@ class ViberFlaskWrapper(object):
 	allowedUsers = None
 
 
-	def __init__(self,name):
-		self.app = Flask(name)
-		self.app.add_url_rule('/message', view_func=self.message, methods=['POST'])
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.add_url_rule('/message', view_func=self.message, methods=['POST'])
 
 		bot_configuration = BotConfiguration(
 			name=os.environ['VIBERBOT_NAME'],
@@ -55,14 +51,6 @@ class ViberFlaskWrapper(object):
 		self.allowedUsers = os.environ['VIBERBOT_ALLOWED_USERS']
 
 		self.disk = YadiskWrapper(os.environ['YADISK_TOKEN'])
-
-
-		
-	def run(self):
-		self.app.run()
-		
-	def flask_app(self):
-		return self.app
 		
 	def message(self):
 		"""Retrieves request body and generates response"""
@@ -183,9 +171,5 @@ class ViberFlaskWrapper(object):
 
 
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 app = ViberFlaskWrapper(__name__)
-flask_app = app.flask_app()
-
-if __name__ == "__main__":
-	serve(flask_app, host="0.0.0.0", port=8080)
