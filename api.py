@@ -89,13 +89,14 @@ class ViberFlaskWrapper(Flask):
 			])
 			# Create saving thread
 			logging.debug("Starting Saving Thread")
-			save_thread = threading.Thread(
-				target=self.thread_save_to_disk, 
-				args=(
-					viber_request.sender.id,
-					request_text,
-					None))
-			save_thread.start()
+			self.thread_save_to_disk(viber_request.sender.id, request_text, None)
+#			save_thread = threading.Thread(
+#				target=self.thread_save_to_disk, 
+#				args=(
+#					viber_request.sender.id,
+#					request_text,
+#					None))
+#			save_thread.start()
 
 
 		# Process Picture, Video and File messages
@@ -111,13 +112,14 @@ class ViberFlaskWrapper(Flask):
 			])
 			# Create saving thread
 			logging.debug("Starting Saving Thread")
-			save_thread = threading.Thread(
-				target=self.thread_save_to_disk, 
-				args=(
-					viber_request.sender.id,
-					None,
-					url))
-			save_thread.start()
+			self.thread_save_to_disk(viber_request.sender.id, None, url)
+#			save_thread = threading.Thread(
+#				target=self.thread_save_to_disk, 
+#				args=(
+#					viber_request.sender.id,
+#					None,
+#					url))
+#			save_thread.start()
 
 
 		# Process Location message
@@ -131,13 +133,14 @@ class ViberFlaskWrapper(Flask):
 			])
 			# Create saving thread
 			logging.debug("Starting Saving Thread")
-			save_thread = threading.Thread(
-				target=self.thread_save_to_disk, 
-				args=(
-					viber_request.sender.id,
-					request_text,
-					None))
-			save_thread.start()
+			self.thread_save_to_disk(viber_request.sender.id, request_text, None)
+#			save_thread = threading.Thread(
+#				target=self.thread_save_to_disk, 
+#				args=(
+#					viber_request.sender.id,
+#					request_text,
+#					None))
+#			save_thread.start()
 
 		# Process other messages
 		else:
