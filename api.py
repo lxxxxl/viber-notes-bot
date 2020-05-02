@@ -54,9 +54,10 @@ class ViberFlaskWrapper(Flask):
 		
 	def message(self):
 		"""Retrieves request body and generates response"""
-		logging.debug("received request. post data: {0}".format(request.get_data()))
+		logging.debug("Processing new request")
 		# verify message signature
 		if not self.viber.verify_signature(request.get_data(), request.headers.get('X-Viber-Content-Signature')):
+			logging.debug("User invalid signature: %s", request.headers.get('X-Viber-Content-Signature'))
 			return Response(status=403)
 
 		# this library supplies a simple way to receive a request object
@@ -64,10 +65,12 @@ class ViberFlaskWrapper(Flask):
 
 		# process only message requests
 		if not isinstance(viber_request, ViberMessageRequest):
+			logging.debug("Message is not ViberMessageRequest")
 			return Response(status=200)
 
 		# check if user allowed to iteract with bot
 		if not viber_request.sender.id in self.allowedUsers:
+			logging.debug("Unknown user: %s", viber_request.sender.id)
 			message = TextMessage(text="403")
 			self.viber.send_messages(viber_request.sender.id, [
 				message
@@ -77,6 +80,7 @@ class ViberFlaskWrapper(Flask):
 
 		# Process Text message
 		if isinstance(viber_request.message, TextMessage):
+			logging.debug("Processing TextMessage")
 			request_text = viber_request.message.text
 			response_text = 'Saving...'
 			message = TextMessage(text=response_text)
@@ -84,6 +88,7 @@ class ViberFlaskWrapper(Flask):
 				message
 			])
 			# Create saving thread
+			logging.debug("Starting Saving Thread")
 			save_thread = threading.Thread(
 				target=self.thread_save_to_disk, 
 				args=(
@@ -97,6 +102,7 @@ class ViberFlaskWrapper(Flask):
 		elif isinstance(viber_request.message, PictureMessage)	\
 		 or isinstance(viber_request.message, VideoMessage)		\
 		 or isinstance(viber_request.message, FileMessage):
+			logging.debug("Processing FileMessage")
 			url = viber_request.message.media	# URL of sent file
 			response_text = 'Saving...'
 			message = TextMessage(text=response_text)
@@ -104,6 +110,7 @@ class ViberFlaskWrapper(Flask):
 				message
 			])
 			# Create saving thread
+			logging.debug("Starting Saving Thread")
 			save_thread = threading.Thread(
 				target=self.thread_save_to_disk, 
 				args=(
@@ -115,6 +122,7 @@ class ViberFlaskWrapper(Flask):
 
 		# Process Location message
 		elif isinstance(viber_request.message, LocationMessage):
+			logging.debug("Processing LocationMessage")
 			request_text = str(viber_request.message.location)
 			response_text = 'Saving...'
 			message = TextMessage(text=response_text)
@@ -122,6 +130,7 @@ class ViberFlaskWrapper(Flask):
 				message
 			])
 			# Create saving thread
+			logging.debug("Starting Saving Thread")
 			save_thread = threading.Thread(
 				target=self.thread_save_to_disk, 
 				args=(
@@ -132,6 +141,7 @@ class ViberFlaskWrapper(Flask):
 
 		# Process other messages
 		else:
+			logging.debug("Received unsupported message")
 			response_text = 'Not supported yet'
 			message = TextMessage(text=response_text)
 			self.viber.send_messages(viber_request.sender.id, [
@@ -142,21 +152,26 @@ class ViberFlaskWrapper(Flask):
 
 	def thread_save_to_disk(self, user_id, note, file_url):
 		"""Saves data to Yandex Disk and sends report to user_id"""
+		logging.debug("Saving Thread started")
 		response_text = 'Saved'
 		# if text note provided
 		if note:
+			logging.debug("Saving note")
 			if not self.disk.save_note(note):
 				response_text = 'Cannot save note.'
 		# if file provided
 		if file_url:
+			logging.debug("Saving file")
 			# extract filename from URL
 			url_parsed = urlparse(file_url)
 			filename = os.path.basename(url_parsed.path)
 			dest_filename = '/tmp/' + filename
 			# download file to temp directory
 			with urllib.request.urlopen(file_url) as response, open(dest_filename, 'wb') as out_file:
+				logging.debug("Downloading file from Viber server")
 				data = response.read()
 				out_file.write(data)
+			logging.debug("Uploading file to Disk")
 			# upload file to Disk
 			if not self.disk.save_file(dest_filename):
 				response_text = 'Cannot save file.'
@@ -171,4 +186,4 @@ class ViberFlaskWrapper(Flask):
 
 
 app = ViberFlaskWrapper(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
