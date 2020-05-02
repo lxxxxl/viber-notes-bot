@@ -2,6 +2,7 @@
 
 import yadisk
 import os.path
+import io
 from datetime import datetime
 
 class YadiskWrapper():
@@ -58,28 +59,18 @@ class YadiskWrapper():
             datetime.now().strftime("%H%M%S")
         )
         
-
-        temp_filename = 'tmp/'+datetime.now().strftime("%Y%m%d%H%M%S")
-        # download file from cloud to append data
-        #if self.disk.is_file(notes_filename):
-        #    self.disk.download(notes_filename, temp_filename)
-        
-        with open(temp_filename,'a') as f:
-            f.write(note)
+        upload_data = io.BytesIO(note.encode()) # convert raw data to filelike object
         
         # upload file
-        if os.path.isfile(temp_filename):
-            try:
-                self.disk.upload(temp_filename, notes_filename, overwrite=True)
-                # remove temp file
-                os.unlink(temp_filename)
-                return True
-            except:
-                return False
+        try:
+            self.disk.upload(upload_data, notes_filename, overwrite=True)
+            return True
+        except:
+            return False
             
         return False
         
-    def save_file(self, filename):
+    def save_file(self, filename, filedata):
         """Save file to remote
 
         File will be saved to file /WORKDIR/YYYMMDD/
@@ -102,14 +93,12 @@ class YadiskWrapper():
             os.path.basename(filename)
         )
 
-        
+        upload_data = io.BytesIO(filedata) # convert raw data to filelike object
         # upload file
-        print(filename)
-        if os.path.isfile(filename):
-            try:
-                self.disk.upload(filename, dest_filename, overwrite=True)
-                return True
-            except:
-                return False
+        try:
+            self.disk.upload(upload_data, dest_filename, overwrite=True)
+            return True
+        except:
+            return False
             
         return False
