@@ -77,6 +77,11 @@ class ViberFlaskWrapper(Flask):
 			])
 			return Response(status=200)
 
+		# fix for duplicate message processing
+		if viber_request.message_token not in self.sessionStorage:
+			self.sessionStorage[viber_request.message_token] = 'processing'
+		else:
+			return Response(status=200)
 
 		# Process Text message
 		if isinstance(viber_request.message, TextMessage):
@@ -150,6 +155,9 @@ class ViberFlaskWrapper(Flask):
 			self.viber.send_messages(viber_request.sender.id, [
 				message
 			])
+			
+		# fix for duplicate message processing
+		if viber_request.message_token in self.sessionStorage: del self.sessionStorage[viber_request.message_token]
 
 		return Response(status=200)
 
