@@ -59,7 +59,7 @@ class YadiskWrapper():
         )
         
 
-        temp_filename = '/tmp/'+datetime.now().strftime("%Y%m%d%H%M%S")
+        temp_filename = 'tmp/'+datetime.now().strftime("%Y%m%d%H%M%S")
         # download file from cloud to append data
         #if self.disk.is_file(notes_filename):
         #    self.disk.download(notes_filename, temp_filename)

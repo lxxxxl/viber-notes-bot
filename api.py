@@ -47,6 +47,8 @@ class ViberFlaskWrapper(Flask):
 			auth_token=os.environ['VIBERBOT_TOKEN']
 		)
 
+		os.mkdir('tmp')	# create temp dir
+
 		self.viber = Api(bot_configuration)
 		self.allowedUsers = os.environ['VIBERBOT_ALLOWED_USERS']
 
@@ -165,7 +167,7 @@ class ViberFlaskWrapper(Flask):
 			# extract filename from URL
 			url_parsed = urlparse(file_url)
 			filename = os.path.basename(url_parsed.path)
-			dest_filename = '/tmp/' + filename
+			dest_filename = 'tmp/' + filename
 			# download file to temp directory
 			with urllib.request.urlopen(file_url) as response, open(dest_filename, 'wb') as out_file:
 				logging.debug("Downloading file from Viber server")
@@ -186,4 +188,4 @@ class ViberFlaskWrapper(Flask):
 
 
 app = ViberFlaskWrapper(__name__)
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
